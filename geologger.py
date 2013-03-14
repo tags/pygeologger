@@ -6,6 +6,7 @@ import pymongo
 import tempfile
 import datetime
 import urlparse, urllib
+import rpy2.robjects as robjects
 
 def csv2json(fname):
     """ Convert CSV file to JSON document for dumping to Mongo """
@@ -64,6 +65,32 @@ def importTag( uploadloc, tagname, notes, location, user_id="guest" ):
         return url_fix('http://test.cybercommons.org/mongo/db_find/geologger/lightlogs/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id))
     except:
         return "Error saving to mongodb"
+
+@task
+def twilightCalc( ligdata, threshold ):
+    r = robjects.r
+    r.library('GeoLight')
+    r.library('RJSONIO')
+    r('lig <- read.csv("%s", header=T)' % ligdata)
+    r('trans <- twilightCalc(lig$datetime, lig$light, LightThreshold=%s' % threshold)
+    return r('toJSON(trans)')
+
+@task
+def sunAngle( transdata, calib_start, calib_stop, release_location ):
+    r = robjects.r
+    #task_id = sunAngle.request.id
+    r.library('GeoLight')
+    lat, lon = release_location
+    robjects.FloatVector([lat,lon])
+    # Place holders for now...will need to accept user upload from web interface instead.
+    r('trans <- read.csv( "%s" , header=T)' % transdata )
+    r('trans <- twilightCalc(trans$datetime, trans$light, ask=F)')
+    r('print(summary(trans))')
+    r('calib <- subset(trans, as.numeric(trans$tSecond) < as.numeric(strptime("%s", "%%Y-%%m-%%d %%H:%%M:%%S")))' % (calib_stop))
+    r('print(summary(calib))')
+    r('elev <- getElevation(calib$tFirst, calib$tSecond, calib$type, known.coord=c(%s,%s))' % (lon, lat) )
+    elev = r('elev')
+    return elev[0]
 
 @task
 def getElevation( calibdata, xylocation ):
