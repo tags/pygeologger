@@ -68,12 +68,28 @@ def importTag( uploadloc, tagname, notes, location, user_id="guest" ):
 
 @task
 def twilightCalc( ligdata, threshold ):
+    """ Python wrapper for GeoLight twilightCalc() """
     r = robjects.r
     r.library('GeoLight')
     r.library('RJSONIO')
     r('lig <- read.csv("%s", header=T)' % ligdata)
     r('trans <- twilightCalc(lig$datetime, lig$light, LightThreshold=%s' % threshold)
     return r('toJSON(trans)')
+
+@task
+def changeLight( transdata , riseprob, setprob, days ):
+    """ Python wrapper for GeoLight changeLight() """
+    pass
+
+@task
+def distanceFilter( transdata, elevation, distance ):
+    """ Python wrapper for GeoLight distanceFilter() """
+    pass
+
+@task
+def coord( transdata, elevation ):
+    """ Python wrapper for GeoLight coord() """
+    pass
 
 @task
 def sunAngle( transdata, calib_start, calib_stop, release_location ):
@@ -88,7 +104,7 @@ def sunAngle( transdata, calib_start, calib_stop, release_location ):
     r('print(summary(trans))')
     r('calib <- subset(trans, as.numeric(trans$tSecond) < as.numeric(strptime("%s", "%%Y-%%m-%%d %%H:%%M:%%S")))' % (calib_stop))
     r('print(summary(calib))')
-    r('elev <- getElevation(calib$tFirst, calib$tSecond, calib$type, known.coord=c(%s,%s))' % (lon, lat) )
+    r('elev <- getElevation(calib$tFirst, calib$tSecond, calib$type, known.coord=c(%s,%s), plot=F)' % (lon, lat) )
     elev = r('elev')
     return elev[0]
 
