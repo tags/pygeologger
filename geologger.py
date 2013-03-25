@@ -35,7 +35,7 @@ def importTagData( uploadloc, tagname, notes, location, user_id="guest" ):
         return "Error saving to mongodb"
 
 @task
-def twilightCalc( tagname, user_id, threshold ):
+def twilightCalc( tagname=None, user_id=None, threshold=None ):
     """ Python wrapper for GeoLight twilightCalc() """
     r = robjects.r
     r.library('GeoLight')
