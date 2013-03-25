@@ -20,6 +20,12 @@ def importTagData( uploadloc, tagname, notes, location, user_id="guest" ):
     """ Import a geologger tag to mongodb """ 
     data = {"tagname":tagname, "notes":notes, "release_location": location, "user_id": user_id, 
                 "timestamp": datetime.datetime.now().isoformat() 
+    data = {
+            "tagname":tagname, 
+            "notes":notes, 
+            "release_location": location, 
+            "user_id": user_id, 
+            "timestamp": datetime.datetime.now().isoformat() 
            }
     data['data'] = csv2json( uploadloc )
     try:
@@ -45,6 +51,17 @@ def twilightCalc( tagname, user_id, threshold ):
         return 'http://test.cybercommons.org/mongo/db_find/geologger/twilights/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
     except:
         return "Trouble persisting results to mongo...try again later"
+    c = mongoconnect('geologger','twilights')
+    data = { 
+            "data":json.loads(r('toJSON(trans)')[0]), 
+            "tagname": tagname, 
+            "user_id": user_id, 
+            "threshold": threshold, 
+            "timestamp": datetime.datetime.now().isoformat()  
+            }
+    c.insert(data)
+    cleanup(ligdata)
+    return 'http://test.cybercommons.org/mongo/db_find/geologger/twilights/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
 
 @task
 def changeLight( tagname, riseprob, setprob, days ):
@@ -63,7 +80,15 @@ def changeLight( tagname, riseprob, setprob, days ):
     r('change <- changeLight(twilight$tFirst, twilight$tSecond, twilight$type, rise.prob=%s, set.prob=%s, days=%s)' % (riseprob,setprob,days))
     c = mongoconnect('geologger','changelight')
     data = { "data": json.loads(r('toJSON(change)')[0]), "user_id_": user_id_ }
+    data = { 
+            "data": json.loads(r('toJSON(change)')[0]), 
+            "params": { "riseprob": riseprob, "setprob":setprob,"days":days },
+            "user_id": user_id, 
+            "tagname": tagname,
+            "timestamp": datetime.datetime.now().isoformat()
+            }
     c.insert(data)
+    cleanup(twilight)
     return 'http://test.cybercommons.org/mongo/db_find/geologger/changelight/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
 
 foo 
@@ -78,6 +103,16 @@ def distanceFilter( transdata, elevation, distance ):
 def coord( transdata, elevation ):
     """ Python wrapper for GeoLight coord() """
     pass
+    data = { 
+            "data": json.loads(r('toJSON(coord)')[0]), 
+            "elevation": elevation, 
+            "tagname": tagname, 
+            "user_name": user_name,
+            "timestamp": datetime.datetime.now().isoformat()    
+            }
+    c.insert(data)
+    cleanup(twilight)
+    return 'http://test.cybercommons.org/mongo/db_find/geologger/coord/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id)
 
 @task
 def sunAngle( transdata, calib_start, calib_stop, release_location ):
