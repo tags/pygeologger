@@ -8,6 +8,7 @@ import datetime
 import urlparse, urllib
 import pandas
 import rpy2.robjects as robjects
+import os
 from util import *
 
 def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
@@ -18,8 +19,6 @@ def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
 @task
 def importTagData( uploadloc, tagname, notes, location, user_id="guest" ):
     """ Import a geologger tag to mongodb """ 
-    data = {"tagname":tagname, "notes":notes, "release_location": location, "user_id": user_id, 
-                "timestamp": datetime.datetime.now().isoformat() 
     data = {
             "tagname":tagname, 
             "notes":notes, 
@@ -44,13 +43,6 @@ def twilightCalc( tagname, user_id, threshold ):
     ligdata = dict2csv(getTagData(tagname,user_id),subkey="data")
     r('lig <- read.csv("%s", header=T)' % ligdata)
     r('trans <- twilightCalc(lig$datetime, lig$light, LightThreshold=%s, ask=F)' % threshold)
-    try:
-        c = mongoconnect('geologger','twilights')
-        data = { "data":json.loads(r('toJSON(trans)')[0]), "tagname": tagname, "user_id": user_id, "threshold": threshold }
-        c.insert(data)
-        return 'http://test.cybercommons.org/mongo/db_find/geologger/twilights/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
-    except:
-        return "Trouble persisting results to mongo...try again later"
     c = mongoconnect('geologger','twilights')
     data = { 
             "data":json.loads(r('toJSON(trans)')[0]), 
@@ -64,22 +56,27 @@ def twilightCalc( tagname, user_id, threshold ):
     return 'http://test.cybercommons.org/mongo/db_find/geologger/twilights/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
 
 @task
-def changeLight( tagname, riseprob, setprob, days ):
+def changeLight( tagname=None, user_id="guest", riseprob=None, setprob=None, days=None ):
     """ Python wrapper for GeoLight changeLight() """
-    user_id_ = changeLight.request.id
-    user_id = "guest"
     r = robjects.r
     r.library('GeoLight')
     r.library('RJSONIO')
-    twilight = df2csv(getTagData(tagname, user_id, col="twilights"), subkey="data")
+    twilight = df2csv(getTagData(tagname=tagname, user_id=user_id, col="twilights"), subkey="data")
     if len(twilight) < 5:
         return "Twilights have not yet been calculated, please compute twilight events and then try again"
     r('twilight <- read.csv("%s", header=T)' % twilight)
     r('twilight$tFirst <- as.POSIXlt(twilight$tFirst, origin="1970-01-01")') # Convert to R Datetime
     r('twilight$tSecond <- as.POSIXlt(twilight$tFirst, origin="1970-01-01")') # Convert to R Datetime
-    r('change <- changeLight(twilight$tFirst, twilight$tSecond, twilight$type, rise.prob=%s, set.prob=%s, days=%s)' % (riseprob,setprob,days))
+    r('change <- changeLight(twilight$tFirst, twilight$tSecond, twilight$type, rise.prob=%s, set.prob=%s, days=%s,plot=F)' % (riseprob,setprob,days))
+    # Hack to get "." out of variable names so json can be stored in MongoDB
+    #   see: "http://docs.mongodb.org/manual/reference/limits/#Restrictions on Field Names"
+    r('names(change)[3] <- "rise_prob"')
+    r('names(change)[4] <- "set_prob"')
+    r('names(change$setProb)[2] <- "prob_y"')
+    r('names(change$riseProb)[2] <- "prob_y"')
+    r('names(change$migTable)[5] <- "P_start"')
+    r('names(change$migTable)[6] <- "P_end"')
     c = mongoconnect('geologger','changelight')
-    data = { "data": json.loads(r('toJSON(change)')[0]), "user_id_": user_id_ }
     data = { 
             "data": json.loads(r('toJSON(change)')[0]), 
             "params": { "riseprob": riseprob, "setprob":setprob,"days":days },
@@ -91,18 +88,25 @@ def changeLight( tagname, riseprob, setprob, days ):
     cleanup(twilight)
     return 'http://test.cybercommons.org/mongo/db_find/geologger/changelight/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
 
-foo 
-
-
 @task
 def distanceFilter( transdata, elevation, distance ):
     """ Python wrapper for GeoLight distanceFilter() """
     pass
 
 @task
-def coord( transdata, elevation ):
+def coord( tagname=None, elevation=None, user_id="guest" ):
     """ Python wrapper for GeoLight coord() """
-    pass
+    r = robjects.r
+    r.library('GeoLight')
+    r.library('RJSONIO')
+    twilight = df2csv(getTagData(tagname, user_id, col="twilights"), subkey="data")
+    if len(twilight) < 5:
+        return "Twilights have not yet been calculated, please compute twilight events then try again"
+    r('twilight <- read.csv("%s", header=T)' % (twilight))
+    r('twilight$tFirst <- as.POSIXlt(twilight$tFirst, origin="1970-01-01")') # Convert to R Datetime
+    r('twilight$tSecond <- as.POSIXlt(twilight$tFirst, origin="1970-01-01")') # Convert to R Datetime
+    r('coord <- coord(twilight$tFirst, twilight$tSecond, twilight$type, elevation = %s)' % elevation)
+    c = mongoconnect('geologger','coord')
     data = { 
             "data": json.loads(r('toJSON(coord)')[0]), 
             "elevation": elevation, 
@@ -115,12 +119,15 @@ def coord( transdata, elevation ):
     return 'http://test.cybercommons.org/mongo/db_find/geologger/coord/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id)
 
 @task
-def sunAngle( transdata, calib_start, calib_stop, release_location ):
+def sunAngle( transdata=None, calib_start=None, calib_stop=None, release_location=None ):
     r = robjects.r
     #task_id = sunAngle.request.id
     r.library('GeoLight')
     lat, lon = release_location
     robjects.FloatVector([lat,lon])
+
+    ligdata = dict2csv(getTagData(tagname,user_id),subkey="data")
+
     # Place holders for now...will need to accept user upload from web interface instead.
     r('trans <- read.csv( "%s" , header=T)' % transdata )
     r('trans <- twilightCalc(trans$datetime, trans$light, ask=F)')
