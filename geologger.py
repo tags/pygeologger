@@ -10,7 +10,7 @@ import pandas
 import rpy2.robjects as robjects
 from util import *
 
-def getTagData(tagname, user_id, db="geologger", col="lightlogs"):
+def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
     """ Get light level data for a tag """ 
     url = "http://test.cybercommons.org/mongo/db_find/%s/%s/{'spec':{'tagname':'%s','user_id':'%s'}}" %(db,col,tagname, user_id)
     return json.loads(urllib.urlopen(url_fix(url)).read())[0]
