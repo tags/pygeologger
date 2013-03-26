@@ -185,17 +185,18 @@ def getElevation_test( calib=None ):
 @task
 def getElevation( data=None ):
     """ Wrapper for GeoLight getElevation """ 
-    if isinstance(data,str):
-        data = json.loads(data)
+    if isinstance(data,unicode or str):
+        datain = json.loads(data)
+    else:
+        datain = data
+    print datain
     r = robjects.r
     user_id = getTaskUser(twilightCalc.request.id)
     r.library('GeoLight')
     r.library('RJSONIO')
-
-    lat, lon = data['release_location']
-    tagname = data['tagname']
+    lat, lon = datain['release_location']
+    tagname = datain['tagname']
     #twilight = getTagData(tagname, user_id, col="twilights")
-    twilight = data['data']
     #twformat = twilight['format']
     """if twformat == "RJSONIO":
         twjson = stringsave(json.dumps(twilight['data']))
@@ -203,11 +204,15 @@ def getElevation( data=None ):
         r('twilights$tFirst <- as.POSIXlt(twilights$tFirst, origin="1970-01-01")') # Convert to R Datetime
         r('twilights$tSecond <- as.POSIXlt(twilights$tFirst, origin="1970-01-01")') # Convert to R Datetime
     elif twformat == "JSON-list":"""
-    twjson = dict2csv(twilight, subkey="data")
+    twjson = dict2csv(datain, subkey="data")
     r('twilights <- read.csv("%s", header=T)' % twjson)
+    r('twilights$tFirst <- strptime(twilights$tFirst, format="%Y-%m-%dT%H:%M:%OSZ")')
+    r('twilights$tSecond <- strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ")')
+    r('paste(levels(twilights$type))')
+    r('levels(twilights$type) <- c(1,2)')
     r('elev <- getElevation(twilights$tFirst, twilights$tSecond, twilights$type, known.coord=c(%s,%s), plot=F)' %(lon, lat) )
     elev = r('elev')
-    data = { "user_id": user_id, "sunelevation": elev[0], "timestamp": datetime.datetime.now().isoformat() , "tagname": tagname }
-    return data
+    dataout = { "user_id": user_id, "sunelevation": elev[0], "timestamp": datetime.datetime.now().isoformat() , "tagname": tagname }
+    return dataout
     
 
