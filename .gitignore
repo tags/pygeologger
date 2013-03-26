@@ -2,3 +2,7 @@
 virtpy
 
 *.pyc
+
+.RData
+
+.Rhistory
