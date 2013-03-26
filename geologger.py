@@ -184,12 +184,41 @@ def getElevation_test( calib=None ):
 
 @task
 def getElevation( data=None ):
-    """ Wrapper for GeoLight getElevation """ 
+    """ 
+    Wrapper for GeoLight getElevation 
+    Expects data like:
+        {
+         "data": [
+          {
+           "active": true,
+           "tSecond": "2011-07-30T16:21:30.000Z",
+           "tFirst": "2011-07-30T06:58:15.000Z",
+           "type": "sunset"
+          },
+          {
+           "active": true,
+           "tSecond": "2011-07-31T06:53:08.181Z",
+           "tFirst": "2011-07-30T16:21:30.000Z",
+           "type": "sunrise"
+          },
+          {
+           "active": true,
+           "tSecond": "2011-07-31T16:25:39.230Z",
+           "tFirst": "2011-07-31T06:53:08.181Z",
+           "type": "sunset"
+          }
+         ],
+         "tagname": "Pabu_test",
+         "release_location": [
+          35.1,
+          -97.0
+         ]
+        }
+    """ 
     if isinstance(data,unicode or str):
         datain = json.loads(data)
     else:
         datain = data
-    print datain
     r = robjects.r
     user_id = getTaskUser(twilightCalc.request.id)
     r.library('GeoLight')
@@ -210,6 +239,7 @@ def getElevation( data=None ):
     r('twilights$tSecond <- strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ")')
     r('paste(levels(twilights$type))')
     r('levels(twilights$type) <- c(1,2)')
+    r('twilights <- subset(twilights, twilights$active == "True")')
     r('elev <- getElevation(twilights$tFirst, twilights$tSecond, twilights$type, known.coord=c(%s,%s), plot=F)' %(lon, lat) )
     elev = r('elev')
     dataout = { "user_id": user_id, "sunelevation": elev[0], "timestamp": datetime.datetime.now().isoformat() , "tagname": tagname }
