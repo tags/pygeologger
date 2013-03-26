@@ -180,7 +180,7 @@ def getElevation_test( calib=None ):
     r('twilights <- fromJSON(file("%s"))' % twjson)
     r('elev <- getElevation(twilights$tFirst, twilights$tSecond, calib$type, known.coord=c(%s,%s), plot=F)' %(lon, lat) )
     elev = r('elev')
-    return { "sunelevation": elev }
+    return { "sunelevation": elev, "user_id": user_id }
 
 @task
 def getElevation( data=None ):
