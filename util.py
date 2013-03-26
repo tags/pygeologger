@@ -6,16 +6,28 @@ import urllib
 import urlparse
 import os
 
+TASK_DB = "cybercom_queue"
+TASK_COLLECTION = "task_log"
+
 def csv2json(fname):
     """ Convert CSV file to JSON document """
     reader = csv.DictReader(open(fname,'rU'))
     rows = [row for row in reader]
     return rows
 
+def stringsave(instring):
+    outfile = tempfile.NamedTemporaryFile(mode="wb+", delete=False).name
+    fout = open(outfile,'w')
+    for line in instring:
+        fout.writelines(line)
+    return outfile
+    
+
 def cleanup( files ):
     for file in files:
         os.remove(file)
     return "Deleted %s" % files
+
 
 def dict2csv(data, outfile=None, subkey=None):
     """ Convert regular structured list of dictionaries to CSV 
@@ -62,3 +74,13 @@ def mongoconnect(db,col):
     force installation of mongos on host
     """ 
     return pymongo.Connection()[db][col]
+
+def getTaskUser(task_id):
+    """ Get the user id of the user who submitted a task """ 
+    try:
+        con = mongoconnect(TASK_DB, TASK_COLLECTION)
+        user = con.find_one({ "task_id": task_id }, fields=['user'])['user']
+        return user
+    except:
+        return "guest"
+
