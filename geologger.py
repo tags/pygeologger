@@ -225,14 +225,6 @@ def getElevation( data=None ):
     r.library('RJSONIO')
     lat, lon = datain['release_location']
     tagname = datain['tagname']
-    #twilight = getTagData(tagname, user_id, col="twilights")
-    #twformat = twilight['format']
-    """if twformat == "RJSONIO":
-        twjson = stringsave(json.dumps(twilight['data']))
-        r('twilights <- fromJSON(file("%s"))' % twjson)
-        r('twilights$tFirst <- as.POSIXlt(twilights$tFirst, origin="1970-01-01")') # Convert to R Datetime
-        r('twilights$tSecond <- as.POSIXlt(twilights$tFirst, origin="1970-01-01")') # Convert to R Datetime
-    elif twformat == "JSON-list":"""
     twjson = dict2csv(datain, subkey="data")
     r('twilights <- read.csv("%s", header=T)' % twjson)
     r('twilights$tFirst <- strptime(twilights$tFirst, format="%Y-%m-%dT%H:%M:%OSZ")')
