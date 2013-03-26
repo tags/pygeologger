@@ -1,1 +1,30 @@
-Tools for processing data from light level geologgers.
+# Geologger Processing 
+
+
+## GeoLight
+Each record will be uniquely identified based on:
+`(tagname, user_id)`
+
+- `tagname` is user specified when lightlog data is uploaded.
+- `user_id` is the integer of the user in the user database.
+
+Right now we'll be allowing multiple entries for a given `tagname` and `user_id`
+
+Because of this, queries should pull only the most recent entry. As part of application queries you should append:
+
+    {"sort":[("timestamp",-1)],"limit":1}
+
+All data is in the `geologger` database in mongodb.
+    
+    http://test.cybercommons.org/mongo/db_find/geologger/
+
+For GeoLight, there are MongoDB collections for `twilights`, `lightlogs` and `changelight`.
+
+- `lightlogs`: Light logs containing datetime, light columns.
+- `twilights`: Data set of tFirst, tSecond, type and any other acillary columns, `format` can be either `RJSONIO` or `JSON-list`.
+- `changelight`: Output from changelight with `.` in variable names replaced with `_`.
+
+
+
+
+
