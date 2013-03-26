@@ -8,3 +8,7 @@ virtpy
 .Rhistory
 
 *.pyc
+
+util.pyc
+
+geologger.pyc
