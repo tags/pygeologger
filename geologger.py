@@ -150,37 +150,6 @@ def coord( tagname=None, sunelevation=None ):
     cleanup([twilight])
     return 'http://test.cybercommons.org/mongo/db_find/geologger/coord/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id)
 
-@task
-def sunAngle( transdata=None, calib_start=None, calib_stop=None, release_location=None ):
-    r = robjects.r
-    user_id = getTaskUser(twilightCalc.request.id)
-    #task_id = sunAngle.request.id
-    r.library('GeoLight')
-    lat, lon = release_location
-    robjects.FloatVector([lat,lon])
-
-    ligdata = dict2csv(getTagData(tagname,user_id),subkey="data")
-
-    # Place holders for now...will need to accept user upload from web interface instead.
-    r('trans <- read.csv( "%s" , header=T)' % transdata )
-    r('trans <- twilightCalc(trans$datetime, trans$light, ask=F)')
-    r('calib <- subset(trans, as.numeric(trans$tSecond) < as.numeric(strptime("%s", "%%Y-%%m-%%d %%H:%%M:%%S")))' % (calib_stop))
-    r('elev <- getElevation(calib$tFirst, calib$tSecond, calib$type, known.coord=c(%s,%s), plot=F)' % (lon, lat) )
-    elev = r('elev')
-    return {"sunelevation": elev[0] }
-
-@task
-def getElevation_test( calib=None ):
-    r = robjects.r
-    user_id = getTaskUser(twilightCalc.request.id)
-    r.library('GeoLight')
-    r.library('RJSONIO')
-    lat, lon = calib['release_location']
-    twjson = stringsave(json.dumps(calib['data']))
-    r('twilights <- fromJSON(file("%s"))' % twjson)
-    r('elev <- getElevation(twilights$tFirst, twilights$tSecond, calib$type, known.coord=c(%s,%s), plot=F)' %(lon, lat) )
-    elev = r('elev')
-    return { "sunelevation": elev, "user_id": user_id }
 
 @task
 def getElevation( data=None ):
