@@ -131,6 +131,8 @@ def coord( data=None ):
         data = { 
                          "tagname": "PABU_test",
                          "sunelevation": -4.5,
+                         "computed": true,
+                         "threshold": 4.5,
                          "twilights": [{ 
                             "tFirst": "2011-07-30T15:21:24.000Z", 
                             "tSecond": "2011-07-31T15:21:24.000Z",
@@ -142,6 +144,8 @@ def coord( data=None ):
                             "type": "sunrise",
                             "active": true
                             }]
+                          "calibperiod": ["2011-07-30T15:21:24.000Z", "2011-07-30T15:21:24.000Z"]
+                    
                 }
     """
     if isinstance(data,unicode or str):
@@ -150,9 +154,8 @@ def coord( data=None ):
         datain = data
     user_id = getTaskUser(coord.request.id) 
     datain['user_id'] = user_id
-    datain['timestamp'] = datetime.datetime.now.isoformat()
+    datain['timestamp'] = datetime.datetime.now().isoformat()
     tagname = datain['tagname']
-    print tagname
     sunelevation = datain['sunelevation']
     r = robjects.r
     r.library('GeoLight')
@@ -191,7 +194,7 @@ def getElevation( data=None ):
     Wrapper for GeoLight getElevation 
     Expects data like:
      data =  {
-         "data": [
+         "twilights": [
           {
            "active": true,
            "tSecond": "2011-07-30T16:21:30.000Z",
@@ -215,7 +218,8 @@ def getElevation( data=None ):
          "release_location": [
           35.1,
           -97.0
-         ]
+         ],
+        "threshold": 5.5
         }
     """ 
     if isinstance(data,unicode or str):
@@ -228,7 +232,7 @@ def getElevation( data=None ):
     r.library('RJSONIO')
     lat, lon = datain['release_location']
     tagname = datain['tagname']
-    twjson = dict2csv(datain, subkey="data")
+    twjson = dict2csv(datain, subkey="twilights")
     r('twilights <- read.csv("%s", header=T)' % twjson)
     r('twilights$tFirst <- strptime(twilights$tFirst, format="%Y-%m-%dT%H:%M:%OSZ")')
     r('twilights$tSecond <- strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ")')
