@@ -162,6 +162,10 @@ def coord( data=None ):
     t.save(datain)
     # Convert input to csv for reading in R
     twilight = df2csv(datain, subkey="twilights")
+    r('twilights <- read.csv("%s", header=T)' % (twilight))
+    # Filter actives
+    r('twilights <- subset(twilights, twilights$active == "True")')
+    # Convert sunrise/sunset to 1,2
     r('twilights$typecat[twilights$type == "sunrise"] <- 1')
     r('twilights$typecat[twilights$type == "sunset"] <- 2')
     # Convert datetimes
