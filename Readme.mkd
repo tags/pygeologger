@@ -24,7 +24,8 @@ For GeoLight, there are MongoDB collections for `twilights`, `lightlogs` and `ch
 - `twilights`: Data set of tFirst, tSecond, type and any other acillary columns, `format` can be either `RJSONIO` or `JSON-list`.
 - `changelight`: Output from changelight with `.` in variable names replaced with `_`.
 
-
+Formats for data:
+-`RJSONIO` 
 
 
 
