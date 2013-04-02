@@ -190,7 +190,7 @@ def getElevation( data=None ):
     """ 
     Wrapper for GeoLight getElevation 
     Expects data like:
-        {
+     data =  {
          "data": [
           {
            "active": true,
