@@ -135,12 +135,12 @@ def coord( data=None ):
                             "tFirst": "2011-07-30T15:21:24.000Z", 
                             "tSecond": "2011-07-31T15:21:24.000Z",
                             "type": "sunrise",
-                            "active": True
+                            "active": true
                             }, { 
                             "tFirst": "2011-07-30T15:21:24.000Z", 
                             "tSecond": "2011-07-31T15:21:24.000Z",
                             "type": "sunrise",
-                            "active": True
+                            "active": true
                             }]
                 }
     """
