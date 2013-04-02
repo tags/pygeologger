@@ -127,6 +127,21 @@ def distanceFilter( transdata, elevation, distance ):
 @task
 def coord( data=None ):
     """ Python wrapper for GeoLight coord() 
+        expects data like:
+        data = { 
+                         "tagname": "PABU_test",
+                         "sunelevation": -4.5,
+                         "twilights": [{ 
+                            "tFirst": "2011-07-30T15:21:24.000Z", 
+                            "tSecond": "2011-07-31T15:21:24.000Z",
+                            "type": "sunrise",
+                            "active": True
+                            }, { 
+                            "tFirst": "2011-07-30T15:21:24.000Z", 
+                            "tSecond": "2011-07-31T15:21:24.000Z",
+                            "type": "sunrise",
+                            "active": True
+                            }]
                 }
     """
     if isinstance(data,unicode or str):
