@@ -125,28 +125,43 @@ def distanceFilter( transdata, elevation, distance ):
     pass
 
 @task
-def coord( tagname=None, sunelevation=None ):
-    """ Python wrapper for GeoLight coord() """
-    user_id = getTaskUser(coord.request.id)
+def coord( data=None ):
+    """ Python wrapper for GeoLight coord() 
+                }
+    """
+    if isinstance(data,unicode or str):
+        datain = json.loads(data)
+    else:
+        datain = data
+    user_id = getTaskUser(coord.request.id) 
+    datain['user_id'] = user_id
+    datain['timestamp'] = datetime.datetime.now.isoformat()
+    tagname = datain['tagname']
+    print tagname
+    sunelevation = datain['sunelevation']
     r = robjects.r
     r.library('GeoLight')
     r.library('RJSONIO')
-    twilight = df2csv(getTagData(tagname, user_id, col="twilights"), subkey="data")
-    if len(twilight) < 5:
-        return "Twilights have not yet been calculated, please compute twilight events then try again"
-    r('twilight <- read.csv("%s", header=T)' % (twilight))
-    r('twilight$tFirst <- as.POSIXlt(twilight$tFirst, origin="1970-01-01")') # Convert to R Datetime
-    r('twilight$tSecond <- as.POSIXlt(twilight$tFirst, origin="1970-01-01")') # Convert to R Datetime
-    r('coord <- coord(twilight$tFirst, twilight$tSecond, twilight$type, elevation = %s)' % sunelevation)
+    # Save input twilights from UI
+    t = mongoconnect('geologger','twilights')
+    t.save(datain)
+    # Convert input to csv for reading in R
+    twilight = df2csv(datain, subkey="twilights")
+    r('twilights$typecat[twilights$type == "sunrise"] <- 1')
+    r('twilights$typecat[twilights$type == "sunset"] <- 2')
+    # Convert datetimes
+    r('twilights$tFirst <- strptime(twilights$tFirst, format="%Y-%m-%dT%H:%M:%OSZ")')
+    r('twilights$tSecond <- strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ")')
+    r('coord <- coord(twilights$tFirst, twilights$tSecond, twilights$typecat, degElevation = %s)' % sunelevation)
     c = mongoconnect('geologger','coord')
-    data = { 
+    dataout = { 
             "data": json.loads(r('toJSON(coord)')[0]), 
             "sunelevation": sunelevation, 
             "tagname": tagname, 
-            "user_name": user_name,
+            "user_id": user_id,
             "timestamp": datetime.datetime.now().isoformat()    
             }
-    c.insert(data)
+    c.insert(dataout)
     cleanup([twilight])
     return 'http://test.cybercommons.org/mongo/db_find/geologger/coord/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id)
 
