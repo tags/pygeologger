@@ -223,7 +223,7 @@ def getElevation( data=None ):
     else:
         datain = data
     r = robjects.r
-    user_id = getTaskUser(twilightCalc.request.id)
+    user_id = getTaskUser(getElevation.request.id)
     r.library('GeoLight')
     r.library('RJSONIO')
     lat, lon = datain['release_location']
