@@ -5,15 +5,24 @@ import pandas
 import urllib
 import urlparse
 import os
+import datetime
 
 TASK_DB = "cybercom_queue"
 TASK_COLLECTION = "task_log"
 
-def csv2json(fname):
+def csv2json(fname, dateformat=None):
     """ Convert CSV file to JSON document """
     reader = csv.DictReader(open(fname,'rU'))
-    rows = [row for row in reader]
+    rows = [convertdate(row, dateformat) for row in reader]
     return rows
+
+def convertdate(data,dtformat=None):
+    """ Manipulate datetime into correct format"""
+    if dtformat:
+        data['datetime'] = datetime.datetime.strptime(data['datetime'], dtformat).strftime("%Y-%m-%d %H:%M:%S")
+        return data
+    else:
+        return data
 
 def stringsave(instring):
     outfile = tempfile.NamedTemporaryFile(mode="wb+", delete=False).name

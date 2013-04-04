@@ -21,7 +21,7 @@ def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
         return json.loads(url_get)[0]
 
 @task
-def importTagData( uploadloc, tagname, notes, location, user_id=None ):
+def importTagData( uploadloc, tagname, notes, location, user_id=None, dateformat=None ):
     """ Import a geologger tag to mongodb """ 
     if not user_id:
         user_id = getTaskUser(importTagData.request.id)
@@ -32,7 +32,7 @@ def importTagData( uploadloc, tagname, notes, location, user_id=None ):
             "user_id": user_id, 
             "timestamp": datetime.datetime.now().isoformat() 
            }
-    data['data'] = csv2json( uploadloc )
+    data['data'] = csv2json(uploadloc, dateformat)
     try:
         c = mongoconnect('geologger','lightlogs')
         c.insert( data )
