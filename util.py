@@ -19,7 +19,8 @@ def csv2json(fname, dateformat=None):
 def convertdate(data,dtformat=None):
     """ Manipulate datetime into correct format"""
     if dtformat:
-        data['datetime'] = datetime.datetime.strptime(data['datetime'], dtformat).strftime("%Y-%m-%d %H:%M:%S")
+        data['datetime'] = datetime.datetime.strptime(data['datetime'], dtformat).isoformat()
+#.strftime("%Y-%m-%d %H:%M:%S")
         return data
     else:
         return data
