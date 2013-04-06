@@ -10,6 +10,7 @@ import pandas
 import rpy2.robjects as robjects
 import os
 from util import *
+import geojson
 
 def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
     """ Get light level data for a tag """ 
@@ -176,13 +177,16 @@ def coord( data=None ):
     r('twilights$tSecond <- strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ")')
     r('coord <- coord(twilights$tFirst, twilights$tSecond, twilights$typecat, degElevation = %s)' % sunelevation)
     c = mongoconnect('geologger','coord')
-    dataout = { 
-            "data": json.loads(r('toJSON(coord)')[0]), 
+
+#    dataout = dict(geojson.FeatureCollection(geojson.Feature(geojson.MultiPoint(json.loads(r('toJSON(coord)')[0])))))
+
+    dataout = json.loads(geojson.dumps(geojson.FeatureCollection(geojson.Feature(geometry=geojson.MultiPoint( json.loads(r('toJSON(coord)')[0])   )))))
+    dataout['properties'] = {  
             "sunelevation": sunelevation, 
             "tagname": tagname, 
             "user_id": user_id,
             "timestamp": datetime.datetime.now().isoformat()    
-            }
+        }
     c.insert(dataout)
     cleanup([twilight])
     return 'http://test.cybercommons.org/mongo/db_find/geologger/coord/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id)
