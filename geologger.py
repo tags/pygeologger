@@ -31,7 +31,7 @@ def importTagData( uploadloc, tagname, notes, location, user_id=None, dateformat
             "notes":notes, 
             "release_location": location, 
             "user_id": user_id, 
-            "timestamp": datetime.datetime.now().isoformat() 
+            "timestamp": "%sZ" % datetime.datetime.now().isoformat() 
            }
     data['data'] = csv2json(uploadloc, dateformat)
     try:
