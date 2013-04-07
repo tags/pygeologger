@@ -4,7 +4,7 @@ import csv
 import simplejson as json
 import pymongo
 import tempfile
-import datetime
+import datetime, time
 import urlparse, urllib
 import pandas
 import rpy2.robjects as robjects
@@ -22,13 +22,13 @@ def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
         return json.loads(url_get)[0]
 
 @task
-def importTagData( uploadloc, tagname, notes, location, user_id=None, dateformat=None ):
+def importTagData_manual( uploadloc, tagname, notes, location, user_id=None, dateformat=None ):
     """ Import a geologger tag to mongodb """ 
     if not user_id:
         user_id = getTaskUser(importTagData.request.id)
     data = {
             "tagname":tagname, 
-            "notes":notes, 
+            "notes": notes, 
             "release_location": location, 
             "user_id": user_id, 
             "timestamp": "%sZ" % datetime.datetime.now().isoformat() 
@@ -40,6 +40,25 @@ def importTagData( uploadloc, tagname, notes, location, user_id=None, dateformat
         return url_fix('http://test.cybercommons.org/mongo/db_find/geologger/lightlogs/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id))
     except:
         return "Error saving to mongodb"
+@task
+def importTagData( data ):
+    """ A task for importing geologger tag data """
+    user_id = getTaskUser(importTagData.request.id)
+    if data['csv']:
+        csvdata = csv2json(data['csv'], fromstring=True)
+    dataout = { "data": csvdata,
+                "tagname": datain['tagname'],
+                "release_location": datain['release_location'],
+                "timestamp": "%sZ" %datetime.datetime.now().isoformat(),
+                "user_id": user_id
+              }
+    try:
+        c = mongoconnect('geologger','lightlogs')
+        c.insert(dataout)
+        return url_fix('http://test.cybercommons.org/mongo/db_find/geologger/lightlogs/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id))
+    except:
+        return "Error saving to mongo"
+
 
 @task
 def twilightCalc( tagname=None, threshold=None ):
@@ -132,19 +151,19 @@ def coord( data=None ):
         data = { 
                          "tagname": "PABU_test",
                          "sunelevation": -4.5,
-                         "computed": true,
+                         "computed": True,
                          "threshold": 4.5,
                          "twilights": [{ 
                             "tFirst": "2011-07-30T15:21:24.000Z", 
                             "tSecond": "2011-07-31T15:21:24.000Z",
                             "type": "sunrise",
-                            "active": true
+                            "active": True
                             }, { 
                             "tFirst": "2011-07-30T15:21:24.000Z", 
                             "tSecond": "2011-07-31T15:21:24.000Z",
                             "type": "sunrise",
-                            "active": true
-                            }]
+                            "active": True
+                            }],
                           "calibperiod": ["2011-07-30T15:21:24.000Z", "2011-07-30T15:21:24.000Z"]
                     
                 }
@@ -175,12 +194,32 @@ def coord( data=None ):
     # Convert datetimes
     r('twilights$tFirst <- strptime(twilights$tFirst, format="%Y-%m-%dT%H:%M:%OSZ")')
     r('twilights$tSecond <- strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ")')
-    r('coord <- coord(twilights$tFirst, twilights$tSecond, twilights$typecat, degElevation = %s)' % sunelevation)
+    r('coord <- as.data.frame(cbind(as.data.frame(coord(twilights$tFirst, twilights$tSecond, twilights$typecat, degElevation = %s)), twilights$tFirst, twilights$tSecond) )' % sunelevation)
+    r('names(coord) <- c("x","y","tFirst","tSecond")')
+    r('coord <- subset(coord, !is.na(y) || !is.na(x))')
+    #r('coord <- subset(coord, !is.na(x))')
+    
     c = mongoconnect('geologger','coord')
 
 #    dataout = dict(geojson.FeatureCollection(geojson.Feature(geojson.MultiPoint(json.loads(r('toJSON(coord)')[0])))))
-
-    dataout = json.loads(geojson.dumps(geojson.FeatureCollection(geojson.Feature(geometry=geojson.MultiPoint( json.loads(r('toJSON(coord)')[0])   )))))
+    df = pandasdf(json.loads(r('toJSON(coord)')[0]))
+    track = [ dict([
+        (colname, row[i]) 
+        for i,colname in enumerate(df.columns)
+        ])
+        for row in df.values
+    ]
+    dataout = json.loads(
+                geojson.dumps(
+                    geojson.FeatureCollection( [
+                         geojson.Feature(geometry=geojson.Point(
+                            [item['x'],item['y']]), properties={"tFirst":datetime.datetime.fromtimestamp(item['tFirst']).isoformat(), "tSecond": datetime.datetime.fromtimestamp(item['tSecond']).isoformat()}
+                          ) 
+                            for item in track 
+                        ] 
+                    )
+                )
+              )
     dataout['properties'] = {  
             "sunelevation": sunelevation, 
             "tagname": tagname, 
