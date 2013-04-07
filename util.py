@@ -6,14 +6,19 @@ import urllib
 import urlparse
 import os
 import datetime
+from StringIO import StringIO
 
 TASK_DB = "cybercom_queue"
 TASK_COLLECTION = "task_log"
 
-def csv2json(fname, dateformat=None):
+def csv2json(fname, dateformat=None, fromstring=False):
     """ Convert CSV file to JSON document """
-    reader = csv.DictReader(open(fname,'rU'))
-    rows = [convertdate(row, dateformat) for row in reader]
+    if fromstring: 
+        csvfile = StringIO(fname)
+        reader = csv.DictReader(csvfile,dialect="excel")
+    else:
+        reader = csv.DictReader(open(fname,'rU'))
+    rows = [ convertdate(row, dateformat) for row in reader ]
     return rows
 
 def convertdate(data,dtformat=None):
@@ -69,6 +74,10 @@ def df2csv(data, outfile=None, subkey=None):
         outfile = tempfile.NamedTemporaryFile(mode="wb+", delete=False).name
     pandas.DataFrame(data).to_csv(outfile)
     return outfile
+
+def pandasdf(data):
+    """ Convert to verbose python dictionary representation """
+    return pandas.DataFrame(data)
 
 def url_fix(s, charset='utf-8'):
     """ Replace unsafe characters in URLs """ 
