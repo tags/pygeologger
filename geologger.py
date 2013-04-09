@@ -12,6 +12,39 @@ import os
 from util import *
 import geojson
 
+template = """
+library(lattice)
+library(ggplot2)
+library(plyr)
+%(version)s
+"""
+
+def runR(datain, 
+            script,
+            outformat, 
+            saveoutput=False,
+            savedisplay=False,
+            saverdata=False):
+    """ Helper function to make running R scripted tasks easier"""
+    # Set current work directory to a tmp dir for R script, gather up all output from there when done.
+    r = robjects.r
+    if saveoutput | savedisplay:
+        tempdir = ""# create temporary directory 
+    if saveoutput:
+        r('setwd("%s")' % tempdir )
+    # Optionally store and persist .RData to disk
+    # PDF Grabbing - grab PDF output and place in sensible location
+    if savedisplay:
+        r('pdf("%s")' % tempdir )
+    r(script)
+    # cleanup temp directory
+    if saverdata & saveoutput:
+        r('save.image()')
+    return 
+
+def runMatlab():
+    pass
+
 def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
     """ Get light level data for a tag """ 
     url = "http://test.cybercommons.org/mongo/db_find/%s/%s/{'spec':{'tagname':'%s','user_id':'%s'}}" %(db,col,tagname, user_id)
@@ -167,12 +200,14 @@ def coord( data=None ):
                           "calibperiod": ["2011-07-30T15:21:24.000Z", "2011-07-30T15:21:24.000Z"]
                     
                 }
+
+        Data can be provided as JSON string or as a python dictionary.
     """
     if isinstance(data,unicode or str):
         datain = json.loads(data)
     else:
         datain = data
-    user_id = getTaskUser(coord.request.id) 
+    user_id = getTaskUser(coord.request.id)
     datain['user_id'] = user_id
     datain['timestamp'] = datetime.datetime.now().isoformat()
     tagname = datain['tagname']
