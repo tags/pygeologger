@@ -42,9 +42,6 @@ def runR(datain,
         r('save.image()')
     return 
 
-def runMatlab():
-    pass
-
 def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
     """ Get light level data for a tag """ 
     url = "http://test.cybercommons.org/mongo/db_find/%s/%s/{'spec':{'tagname':'%s','user_id':'%s'}}" %(db,col,tagname, user_id)
@@ -227,14 +224,19 @@ def coord( data=None ):
     r('twilights$typecat[twilights$type == "sunrise"] <- 1')
     r('twilights$typecat[twilights$type == "sunset"] <- 2')
     # Convert datetimes
-    r('twilights$tFirst <- strptime(twilights$tFirst, format="%Y-%m-%dT%H:%M:%OSZ")')
-    r('twilights$tSecond <- strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ")')
-    r('coord <- as.data.frame(cbind(as.data.frame(coord(twilights$tFirst, twilights$tSecond, twilights$typecat, degElevation = %s)), twilights$tFirst, twilights$tSecond) )' % sunelevation)
-    r('names(coord) <- c("x","y","tFirst","tSecond")')
-    r('coord <- subset(coord, !is.na(y) || !is.na(x))')
-    #r('coord <- subset(coord, !is.na(x))')
+    r('twilights$tFirst <- as.POSIXct(strptime(twilights$tFirst, format="%Y-%m-%dT%H:%M:%OSZ", tz="GMT"))')
+    r('twilights$tSecond <- as.POSIXct(strptime(twilights$tSecond, format="%Y-%m-%dT%H:%M:%OSZ", tz="GMT"))')
+    r('coord <- coord(twilights$tFirst, twilights$tSecond, twilights$typecat, degElevation = %s)'% sunelevation) 
+    r('coord <- as.data.frame(cbind(as.data.frame(coord), twilights$tFirst, twilights$tSecond))' ) 
     
+    r('names(coord) <- c("x","y","tFirst","tSecond")')
+    r('coord <- subset(coord, !is.na(y) & !is.na(x))')
+    r('coord$tFirst <- as.character(strftime(coord$tFirst, "%Y-%m-%dT%H:%M:%SZ"))')
+    r('coord$tSecond <- as.character(strftime(coord$tSecond, "%Y-%m-%dT%H:%M:%SZ"))')
+    #r('coord <- subset(coord, !is.na(x))')
+    d = mongoconnect('geologger', 'debug')
     c = mongoconnect('geologger','coord')
+
 
 #    dataout = dict(geojson.FeatureCollection(geojson.Feature(geojson.MultiPoint(json.loads(r('toJSON(coord)')[0])))))
     df = pandasdf(json.loads(r('toJSON(coord)')[0]))
@@ -244,11 +246,14 @@ def coord( data=None ):
         ])
         for row in df.values
     ]
+
+    d.insert({"dataframe": df.to_string(), "fromR": json.loads(r('toJSON(coord)')[0])})
+        
     dataout = json.loads(
                 geojson.dumps(
                     geojson.FeatureCollection( [
                          geojson.Feature(geometry=geojson.Point(
-                            [item['x'],item['y']]), properties={"tFirst":datetime.datetime.fromtimestamp(item['tFirst']).isoformat(), "tSecond": datetime.datetime.fromtimestamp(item['tSecond']).isoformat()}
+                            [item['x'],item['y']]), properties={"tFirst": item['tFirst'], "tSecond": item['tSecond']}
                           ) 
                             for item in track 
                         ] 
