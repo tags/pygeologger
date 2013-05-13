@@ -1,0 +1,9 @@
+{ "data": [ {"light": 12, "datetime": "2010-01-01T00:00:01Z"}, {"light":15, "datetime": "2010-01-02T00:00:02Z"} ],
+    "tagname": "Sometesting tag name",
+    "release_location": [-97.5, 35.0],
+    "release_time": "2010-01-01T00:00:00",
+    "recapture_time": "2011-01-01T00:00:00",
+    "recapture_location": [-97.5, 35.0],
+    "notes": "We're testing the file upload",
+    "species": "Passerina ciris"
+}

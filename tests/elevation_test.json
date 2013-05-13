@@ -1,0 +1,16 @@
+{
+ "data": [
+  {
+   "threshold": 5.5,
+   "active": true,
+   "tSecond": "2011-07-30T16:21:30.000Z",
+   "tFirst": "2011-07-30T06:58:15.000Z",
+   "type": "sunset"
+  }
+ ],
+ "tagname": "Pabu_test",
+ "release_location": [
+  35.1,
+  -97.0
+ ]
+}

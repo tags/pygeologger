@@ -1,0 +1,25 @@
+[ {
+    "datetime": "2011-07-30T06:58:15.000Z",
+    "threshold": 5.5,
+    "type": "sunset",
+    "active": false
+  },
+  {
+    "datetime": "2011-07-30T06:58:15.000Z",
+    "threshold": 5.5,
+    "type": "sunset",
+    "active": false
+  },
+  {
+    "datetime": "2011-07-30T06:58:15.000Z",
+    "threshold": 5.5,
+    "type": "sunset",
+    "active": false
+  },
+  {
+    "datetime": "2011-07-30T06:58:15.000Z",
+    "threshold": 5.5,
+    "type": "sunset",
+    "active": false
+  }
+]
