@@ -73,19 +73,26 @@ def importTagData_manual( uploadloc, tagname, notes, location, user_id=None, dat
 @task
 def importTagData( data ):
     """ A task for importing geologger tag data """
+    if isinstance(data,unicode or str):
+        datain = json.loads(data)
+    else:
+        datain = data
     user_id = getTaskUser(importTagData.request.id)
-    if data['csv']:
-        csvdata = csv2json(data['csv'], fromstring=True)
-    dataout = { "data": csvdata,
+    dataout = { "data": datain['data'],
                 "tagname": datain['tagname'],
                 "release_location": datain['release_location'],
-                "timestamp": "%sZ" %datetime.datetime.now().isoformat(),
+                "release_time": datain['release_time'],
+                "recapture_location": datain['recapture_location'],
+                "recapture_time": datain['recapture_time'],
+                "notes": datain['notes'],
+                "species": datain['species'],
+                "timestamp": "%sZ" % datetime.datetime.now().isoformat(),
                 "user_id": user_id
               }
-    try:
+    try: 
         c = mongoconnect('geologger','lightlogs')
         c.insert(dataout)
-        return url_fix('http://test.cybercommons.org/mongo/db_find/geologger/lightlogs/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname,user_id))
+        return url_fix('http://test.cybercommons.org/mongo/db_find/geologger/lightlogs/{"spec":{"tagname":"%s","user_id":"%s"}}' % (dataout['tagname'],dataout['user_id']))
     except:
         return "Error saving to mongo"
 
