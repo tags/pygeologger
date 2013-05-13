@@ -1,0 +1,46 @@
+Tilde Output - TILDE (Twilight Indicated Light Data Export)
+===========================================================
+
+Metadata
+--------
+- tagname: 
+- unique_id: 
+- {calibration: 
+    [{location: [lat,lon].
+     time: { start: Date() , end: Date() }
+     notes: ""
+    }]
+- release_location: [lat,lon]
+- release_time: Date()
+- recapture_location: [lat,lon]
+- recapture_time: Date()
+- notes: String
+- species: 
+
+Data
+----
+- datetime: the observed date time
+- light: light level
+- type: sunrise/sunset
+- interp: TRUE/FALSE
+- excluded: TRUE/FALSE
+
+
+tripEstimation and DayTripR
+---------------------------
+Home Range Location: xmin, xmax, ymin, ymax
+release_location: not-required
+release_datetime: not-required
+recapture_location: not-required
+recaprute_datetime: not-required
+ 
+Stat s from user
+---------------
+model_variance X(times of twilight) lon, lat, att
+model_variance Z(times between twilight) lon, lat 
+
+Move model type - 
+Ekstrom - 
+
+
+

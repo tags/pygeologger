@@ -1,6 +1,8 @@
 *.swp
 virtpy
-
+Vagrantfile
+.vagrant
+rdrafts
 *.pyc
 
 .RData
