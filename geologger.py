@@ -71,7 +71,7 @@ def importTagData_manual( uploadloc, tagname, notes, location, user_id=None, dat
     except:
         return "Error saving to mongodb"
 @task
-def importTagData( data ):
+def importTagData( data=None ):
     """ A task for importing geologger tag data """
     if isinstance(data,unicode or str):
         datain = json.loads(data)
