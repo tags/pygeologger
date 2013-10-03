@@ -94,12 +94,4 @@ def mongoconnect(db,col):
     """ 
     return pymongo.Connection()[db][col]
 
-def getTaskUser(task_id):
-    """ Get the user id of the user who submitted a task """ 
-    try:
-        con = mongoconnect(TASK_DB, TASK_COLLECTION)
-        user = con.find_one({ "task_id": task_id }, fields=['user'])['user']
-        return user
-    except:
-        return "guest"
 

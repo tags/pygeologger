@@ -52,16 +52,15 @@ def getTagData(tagname, user_id="guest", db="geologger", col="lightlogs"):
         return json.loads(url_get)[0]
 
 @task
-def importTagData_manual( uploadloc, tagname, notes, location, user_id=None, dateformat=None ):
+def importTagData_manual( uploadloc, tagname, notes, location, dateformat=None , task_id=None, user_id=None):
     """ Import a geologger tag to mongodb """ 
-    if not user_id:
-        user_id = getTaskUser(importTagData.request.id)
     data = {
             "tagname":tagname, 
             "notes": notes, 
             "release_location": location, 
             "user_id": user_id, 
-            "timestamp": "%sZ" % datetime.datetime.now().isoformat() 
+            "timestamp": "%sZ" % datetime.datetime.now().isoformat(),
+            "task_id": task_id
            }
     data['data'] = csv2json(uploadloc, dateformat)
     try:
@@ -71,13 +70,13 @@ def importTagData_manual( uploadloc, tagname, notes, location, user_id=None, dat
     except:
         return "Error saving to mongodb"
 @task
-def importTagData( data=None ):
+def importTagData( data=None, task_id=None, user_id=None ):
     """ A task for importing geologger tag data """
     if isinstance(data,unicode or str):
         datain = json.loads(data)
     else:
         datain = data
-    user_id = getTaskUser(importTagData.request.id)
+
     dataout = { "data": datain['data'],
                 "tagname": datain['tagname'],
                 "release_location": datain['release_location'],
@@ -87,21 +86,21 @@ def importTagData( data=None ):
                 "notes": datain['notes'],
                 "species": datain['species'],
                 "timestamp": "%sZ" % datetime.datetime.now().isoformat(),
-                "user_id": user_id
+                "user_id": user_id,
+                "task_id": task_id
               }
     try: 
         c = mongoconnect('geologger','lightlogs')
-        c.insert(dataout)
-        return url_fix('http://test.cybercommons.org/mongo/db_find/geologger/lightlogs/{"spec":{"tagname":"%s","user_id":"%s"}}' % (dataout['tagname'],dataout['user_id']))
+        mongoid = c.insert(dataout)
+        return str(mongoid)
     except:
         return "Error saving to mongo"
 
 
 @task
-def twilightCalc( tagname=None, threshold=None ):
+def twilightCalc( tagname=None, threshold=None, task_id=None, user_id=None):
     """ Python wrapper for GeoLight twilightCalc() """
     r = robjects.r
-    user_id = getTaskUser(twilightCalc.request.id)
     r.library('GeoLight')
     r.library('RJSONIO')
     tagdata = getTagData(tagname,user_id)
@@ -116,7 +115,8 @@ def twilightCalc( tagname=None, threshold=None ):
                 "user_id": user_id, 
                 "threshold": threshold, 
                 "timestamp": datetime.datetime.now().isoformat(),
-                "format": "RJSONIO"
+                "format": "RJSONIO",
+                "task_id": task_id
                 }
         c.insert(data)
         cleanup([ligdata])
@@ -125,17 +125,18 @@ def twilightCalc( tagname=None, threshold=None ):
         return "Had a problem finding lightlog data"
 
 @task
-def twilightInsert(tagname=None, data=None, threshold=None):
+def twilightInsert(tagname=None, data=None, threshold=None, task_id=None,user_id=None):
     """ Take twilight data from web interface """
     c = mongoconnect('geologger','twilights')
-    user_id = getTaskUser(twilightInsert.request.id)
+
     data = { 
         "data": json.loads( data ), 
         "tagname": tagname, 
         "user_id": user_id, 
         "threshold": threshold, 
         "timestamp": datetime.datetime.now().isoformat(),
-        "format": "JSON-list"
+        "format": "JSON-list",
+        "task_id": task_id
         }
     c.save(data)
     return 'http://test.cybercommons.org/mongo/db_find/geologger/twilights/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
@@ -143,10 +144,9 @@ def twilightInsert(tagname=None, data=None, threshold=None):
     
 
 @task
-def changeLight( tagname=None, riseprob=None, setprob=None, days=None ):
+def changeLight( tagname=None, riseprob=None, setprob=None, days=None, task_id=None, user_id=None):
     """ Python wrapper for GeoLight changeLight() """
     r = robjects.r
-    user_id = getTaskUser(changeLight.request.id)
     r.library('GeoLight')
     r.library('RJSONIO')
     twilight = df2csv(getTagData(tagname=tagname, user_id=user_id, col="twilights"), subkey="data")
@@ -170,19 +170,20 @@ def changeLight( tagname=None, riseprob=None, setprob=None, days=None ):
             "params": { "riseprob": riseprob, "setprob":setprob,"days":days },
             "user_id": user_id, 
             "tagname": tagname,
-            "timestamp": datetime.datetime.now().isoformat()
+            "timestamp": datetime.datetime.now().isoformat(),
+            "task_id": task_id
             }
     c.insert(data)
     cleanup([twilight])
     return 'http://test.cybercommons.org/mongo/db_find/geologger/changelight/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
 
 @task
-def distanceFilter( transdata, elevation, distance ):
+def distanceFilter( transdata, elevation, distance, task_id=None, user_id=None ):
     """ Python wrapper for GeoLight distanceFilter() """
     pass
 
 @task
-def coord( data=None ):
+def coord( data=None, task_id=None, user_id=None ):
     """ Python wrapper for GeoLight coord() 
         expects data like:
         data = { 
@@ -211,7 +212,7 @@ def coord( data=None ):
         datain = json.loads(data)
     else:
         datain = data
-    user_id = getTaskUser(coord.request.id)
+
     datain['user_id'] = user_id
     datain['timestamp'] = datetime.datetime.now().isoformat()
     tagname = datain['tagname']
@@ -271,7 +272,8 @@ def coord( data=None ):
             "sunelevation": sunelevation, 
             "tagname": tagname, 
             "user_id": user_id,
-            "timestamp": datetime.datetime.now().isoformat()    
+            "timestamp": datetime.datetime.now().isoformat(),
+            "task_id": task_id   
         }
     c.insert(dataout)
     cleanup([twilight])
@@ -279,7 +281,7 @@ def coord( data=None ):
 
 
 @task
-def getElevation( data=None ):
+def getElevation( data=None, task_id=None, user_id=None):
     """ 
     Wrapper for GeoLight getElevation 
     Expects data like:
@@ -316,8 +318,8 @@ def getElevation( data=None ):
         datain = json.loads(data)
     else:
         datain = data
+   
     r = robjects.r
-    user_id = getTaskUser(getElevation.request.id)
     r.library('GeoLight')
     r.library('RJSONIO')
     lat, lon = datain['release_location']
@@ -331,7 +333,8 @@ def getElevation( data=None ):
     r('twilights <- subset(twilights, twilights$active == "True")')
     r('elev <- getElevation(twilights$tFirst, twilights$tSecond, twilights$type, known.coord=c(%s,%s), plot=F)' %(lon, lat) )
     elev = r('elev')
-    dataout = { "user_id": user_id, "sunelevation": elev[0], "timestamp": datetime.datetime.now().isoformat() , "tagname": tagname }
+    dataout = { "task_id": task_id, "user_id": user_id, "sunelevation": elev[0], "timestamp": datetime.datetime.now().isoformat() , "tagname": tagname }
+    cleanup([twjson])
     return dataout
     
 
