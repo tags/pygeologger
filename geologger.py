@@ -79,10 +79,6 @@ def importTagData( data=None, task_id=None, user_id=None ):
 
     dataout = { "data": datain['data'],
                 "tagname": datain['tagname'],
-                "release_location": datain['release_location'],
-                "release_time": datain['release_time'],
-                "recapture_location": datain['recapture_location'],
-                "recapture_time": datain['recapture_time'],
                 "notes": datain['notes'],
                 "species": datain['species'],
                 "timestamp": "%sZ" % datetime.datetime.now().isoformat(),
@@ -91,8 +87,8 @@ def importTagData( data=None, task_id=None, user_id=None ):
               }
     try: 
         c = mongoconnect('geologger','lightlogs')
-        mongoid = c.insert(dataout)
-        return str(mongoid)
+        c.insert(dataout)
+        return url_fix('http://test.cybercommons.org/mongo/db_find/geologger/lightlogs/{"spec":{"tagname":"%s","user_id":"%s"}}' % (dataout['tagname'],dataout['user_id']))
     except:
         return "Error saving to mongo"
 
@@ -334,7 +330,6 @@ def getElevation( data=None, task_id=None, user_id=None):
     r('elev <- getElevation(twilights$tFirst, twilights$tSecond, twilights$type, known.coord=c(%s,%s), plot=F)' %(lon, lat) )
     elev = r('elev')
     dataout = { "task_id": task_id, "user_id": user_id, "sunelevation": elev[0], "timestamp": datetime.datetime.now().isoformat() , "tagname": tagname }
-    cleanup([twjson])
     return dataout
     
 
