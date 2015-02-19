@@ -338,6 +338,7 @@ def getElevation( data=None, task_id=None, user_id=None):
     r('elev <- getElevation(twilights$tFirst, twilights$tSecond, twilights$type, known.coord=c(%s,%s), plot=F)' %(lon, lat) )
     elev = r('elev')
     dataout = { "task_id": task_id, "user_id": user_id, "sunelevation": elev[0], "timestamp": datetime.datetime.now().isoformat() , "tagname": tagname }
+    cleanup([twjson])
     return dataout
     
 
