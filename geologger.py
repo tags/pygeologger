@@ -137,7 +137,7 @@ def twilightInsert(tagname=None, data=None, threshold=None, task_id=None,user_id
     c.save(data)
     return 'http://test.cybercommons.org/mongo/db_find/geologger/twilights/{"spec":{"tagname":"%s","user_id":"%s"}}' % (tagname, user_id)
 
-    
+
 @task
 def deleteTag(tagname=None, user_id=None):
     l = mongoconnect('geologger','lightlogs')
