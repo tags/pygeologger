@@ -4,13 +4,6 @@ Vagrantfile
 .vagrant
 rdrafts
 *.pyc
-
 .RData
-
 .Rhistory
-
 *.pyc
-
-util.pyc
-
-geologger.pyc
